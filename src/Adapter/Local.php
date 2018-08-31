@@ -428,6 +428,11 @@ class Local extends AbstractAdapter
     {
         if ( ! $file->isLink()) {
             return $this->mapFileInfo($file);
+        } else {
+            // only symlink file
+            if ($file->isFile() ) {
+                return $this->mapFileInfoSymlink($file);
+            }
         }
 
         if ($this->linkHandling & self::DISALLOW_LINKS) {
@@ -459,7 +464,7 @@ class Local extends AbstractAdapter
     protected function getRecursiveDirectoryIterator($path, $mode = RecursiveIteratorIterator::SELF_FIRST)
     {
         return new RecursiveIteratorIterator(
-            new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+            new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS | FilesystemIterator::FOLLOW_SYMLINKS),
             $mode
         );
     }
@@ -493,6 +498,19 @@ class Local extends AbstractAdapter
         if ($normalized['type'] === 'file') {
             $normalized['size'] = $file->getSize();
         }
+
+        return $normalized;
+    }
+
+    protected function mapFileInfoSymlink(SplFileInfo $file)
+    {
+        $normalized = [
+            'type' => 'file',
+            'path' => $this->getFilePath($file),
+        ];
+
+        $normalized['timestamp'] = $file->getMTime();
+        $normalized['size'] = $file->getSize();
 
         return $normalized;
     }
